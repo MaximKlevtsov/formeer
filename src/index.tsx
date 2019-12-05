@@ -5,7 +5,7 @@ import guid from 'uuid/v4';
 
 export type TValidationError = string | undefined;
 
-export type TValidator = <Value>(value: Value) => TValidationError;
+export type TValidator<Value = any> = (value: Value) => TValidationError;
 
 export type TFormeerFieldOptions<Value> = {
     initialValue?: Value;
@@ -130,7 +130,7 @@ export type TFormeerFieldHostProps<Value> = {
     children?: ReactNode;
     initialValue?: Value;
     fieldName: string;
-    validator?: TValidator;
+    validator?: TValidator<Value>;
 };
 
 export function FormeerFieldHost<Value = any>(props: TFormeerFieldHostProps<Value>): JSX.Element {
