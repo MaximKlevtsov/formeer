@@ -1,0 +1,8 @@
+.git
+.gitignore
+.editorconfig
+.rts*
+src
+tsconfig.json
+README.md
+*.log
