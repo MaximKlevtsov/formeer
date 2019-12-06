@@ -7,6 +7,9 @@ export type TValidationError = string | undefined;
 
 export type TValidator<Value = any> = (value: Value) => TValidationError;
 
+export type TOnBlurHandler = () => void;
+export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) => void;
+
 export type TFormeerFieldOptions<Value> = {
     initialValue?: Value;
     isTouched?: boolean;
@@ -27,6 +30,8 @@ export class FormeerField<Value = any> {
 
     private _errors: Array<TValidationError> = [];
     private _isTouched: boolean = false;
+    private onBlurHandler!: TOnBlurHandler;
+    private onChangeHandler!: TOnChangeHandler<Value>;
     private validator?: TValidator;
 
     constructor(private formeerInstance: Formeer, private fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
@@ -38,14 +43,9 @@ export class FormeerField<Value = any> {
 
         this._isTouched = !!isTouched;
         this.validator = validator;
-    }
 
-    getBlurHandler(): () => void {
-        return () => this.setIsTouched(true);
-    }
-
-    getClickHandler<T extends { value: Value }>(): (event: SyntheticEvent<T>) => void {
-        return ({ currentTarget }: SyntheticEvent<T>) => this.handleChange(currentTarget.value);
+        this.onBlurHandler = () => this.setIsTouched(true);
+        this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
     }
 
     handleChange(value: Value): void {
@@ -58,6 +58,14 @@ export class FormeerField<Value = any> {
 
     setIsTouched(value: boolean): void {
         this._isTouched = value;
+    }
+
+    get blurHandler(): TOnBlurHandler {
+        return this.onBlurHandler;
+    }
+
+    get changeHandler(): TOnChangeHandler<Value>  {
+        return this.onChangeHandler;
     }
 
     get errors(): Array<TValidationError> {
