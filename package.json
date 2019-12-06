@@ -13,16 +13,10 @@
         "start": "tsdx watch",
         "build": "tsdx build",
         "test": "tsdx test --env=jsdom --passWithNoTests",
-        "lint": "tsdx lint",
         "push": "yarn build && np"
     },
     "peerDependencies": {
         "react": ">=16"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "tsdx lint"
-        }
     },
     "prettier": {
         "printWidth": 80,
@@ -35,7 +29,6 @@
         "@types/lodash": "^4.14.149",
         "@types/react": "^16.9.15",
         "@types/uuid": "^3.4.6",
-        "husky": "^3.1.0",
         "np": "^5.2.1",
         "react": "^16.12.0",
         "tsdx": "^0.11.0",
