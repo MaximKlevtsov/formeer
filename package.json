@@ -1,6 +1,6 @@
 {
     "name": "formeer",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "license": "MIT",
     "author": "Mikhail Vedernikov <misha.smert@gmail.com> (https://smertos.xyz/)",
     "main": "dist/index.js",
