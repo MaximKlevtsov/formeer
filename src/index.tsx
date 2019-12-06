@@ -1,6 +1,6 @@
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { useState, createContext, ReactNode, useCallback } from 'react';
+import React, { createContext, ReactNode, SyntheticEvent, useCallback, useState } from 'react';
 import guid from 'uuid/v4';
 
 export type TValidationError = string | undefined;
@@ -40,6 +40,14 @@ export class FormeerField<Value = any> {
         this.validator = validator;
     }
 
+    getBlurHandler(): () => void {
+        return () => this.setIsTouched(true);
+    }
+
+    getClickHandler<T extends { value: Value }>(): (event: SyntheticEvent<T>) => void {
+        return ({ currentTarget }: SyntheticEvent<T>) => this.handleChange(currentTarget.value);
+    }
+
     handleChange(value: Value): void {
         this.formeerInstance.setValue(this.fieldName, value);
 
@@ -48,8 +56,8 @@ export class FormeerField<Value = any> {
         }
     }
 
-    handleTouch(): void {
-        this._isTouched = true;
+    setIsTouched(value: boolean): void {
+        this._isTouched = value;
     }
 
     get errors(): Array<TValidationError> {
