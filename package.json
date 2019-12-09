@@ -16,7 +16,8 @@
         "push": "yarn build && np"
     },
     "peerDependencies": {
-        "react": ">=16"
+        "react": ">=16",
+        "rxjs": "^6.5.0"
     },
     "prettier": {
         "printWidth": 80,
