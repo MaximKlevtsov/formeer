@@ -1,9 +1,8 @@
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { createContext, ReactNode, SyntheticEvent, useCallback, useState } from 'react';
+import { SyntheticEvent, useState } from 'react';
 import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
-import guid from 'uuid/v4';
 
 export type TValidationError = string | undefined;
 export type TValidator<Value = any> = (value: Value) => TValidationError;
@@ -167,47 +166,4 @@ export function useFormeerField<Value = any>(formeerInstance: Formeer, fieldName
     const [fieldInstance] = useState(FormeerField.getInstance<Value>(formeerInstance, fieldName, options));
 
     return fieldInstance;
-}
-
-export const FormeerContext = createContext<Formeer | null>(null);
-export const FormeerFieldContext = createContext<FormeerField | null>(null);
-
-export type TFormeerHostProps<Values> = {
-    children?: ReactNode;
-    initialValues: Values;
-    name?: string;
-};
-
-export function FormeerHost<Values = any>(props: TFormeerHostProps<Values>): JSX.Element {
-    const { children, initialValues, name = guid() } = props;
-    const formeerInstance = useFormeer(name, initialValues);
-
-    return (
-        <FormeerContext.Provider value={formeerInstance}>
-            {children}
-        </FormeerContext.Provider>
-    );
-}
-
-export type TFormeerFieldHostProps<Value> = {
-    children?: ReactNode;
-    initialValue?: Value;
-    name: string;
-    validator?: TValidator<Value>;
-};
-
-export function FormeerFieldHost<Value = any>(props: TFormeerFieldHostProps<Value>): JSX.Element {
-    const { children, name, initialValue, validator } = props;
-
-    const renderFormeerFieldHost = useCallback((value: Formeer | null) => (
-        <FormeerFieldContext.Provider value={value !== null ? useFormeerField(value, name, { initialValue, validator }) : null}> // TODO: prevent options object from recreation when not needed
-            {children}
-        </FormeerFieldContext.Provider>
-    ), [children, name]);
-
-    return (
-        <FormeerContext.Consumer>
-            {renderFormeerFieldHost}
-        </FormeerContext.Consumer>
-    );
 }
