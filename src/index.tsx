@@ -6,9 +6,7 @@ import { debounceTime, map } from 'rxjs/operators';
 import guid from 'uuid/v4';
 
 export type TValidationError = string | undefined;
-
 export type TValidator<Value = any> = (value: Value) => TValidationError;
-
 export type TOnBlurHandler = () => void;
 export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) => void;
 
@@ -27,9 +25,9 @@ export class FormeerField<Value = any> {
 
     private static instances: Record<string, FormeerField> = {};
 
-    static getInstance<Value>(formeerInstance: Formeer, fieldName: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
+    static getInstance<Value>(formeerInstance: Formeer, name: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
         if (!FormeerField.instances[name]) {
-            FormeerField.instances[name] = new FormeerField<Value>(formeerInstance, fieldName, options);
+            FormeerField.instances[name] = new FormeerField<Value>(formeerInstance, name, options);
         }
 
         return FormeerField.instances[name];
