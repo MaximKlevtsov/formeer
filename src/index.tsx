@@ -102,7 +102,7 @@ export class Formeer<Values extends Record<string, any> = any> {
 
     static getInstance<Values>(name: string, initialValues?: Values): Formeer<Values> {
         if (!Formeer.instances[name]) {
-            Formeer.instances[name] = new Formeer<Values>(initialValues);
+            Formeer.instances[name] = new Formeer<Values>(name, initialValues);
         }
 
         return Formeer.instances[name];
@@ -111,7 +111,7 @@ export class Formeer<Values extends Record<string, any> = any> {
     private subscriptions: Array<Subscription> = [];
     private values: Values = {} as Values;
 
-    constructor(initialValues?: Values) {
+    constructor(private name: string, initialValues?: Values) {
         if (initialValues !== void 0) {
             this.values = initialValues;
         }
