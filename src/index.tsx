@@ -1,6 +1,8 @@
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { createContext, ReactNode, SyntheticEvent, useCallback, useState } from 'react';
+import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
+import { debounceTime, map } from 'rxjs/operators';
 import guid from 'uuid/v4';
 
 export type TValidationError = string | undefined;
@@ -10,9 +12,14 @@ export type TValidator<Value = any> = (value: Value) => TValidationError;
 export type TOnBlurHandler = () => void;
 export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) => void;
 
+export type TFormeerFieldMeta<Value> = {
+    error: TValidationError;
+    touched: boolean;
+    value: Value | undefined;
+};
+
 export type TFormeerFieldOptions<Value> = {
     initialValue?: Value;
-    isTouched?: boolean;
     validator?: TValidator;
 };
 
@@ -28,36 +35,57 @@ export class FormeerField<Value = any> {
         return FormeerField.instances[name];
     }
 
-    private _errors: Array<TValidationError> = [];
-    private _isTouched: boolean = false;
     private onBlurHandler!: TOnBlurHandler;
     private onChangeHandler!: TOnChangeHandler<Value>;
+
+    private setError$: BehaviorSubject<TValidationError> = new BehaviorSubject<TValidationError>(void 0);
+    private setTouched$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+    private setValue$: BehaviorSubject<Value | undefined> = new BehaviorSubject<Value | undefined>(void 0);
+
     private validator?: TValidator;
 
-    constructor(private formeerInstance: Formeer, private fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
-        const { initialValue, isTouched, validator } = options;
+    readonly name: string;
+
+    readonly error$: Observable<TValidationError> = this.setError$.asObservable();
+    readonly touched$: Observable<boolean> = this.setTouched$.asObservable();
+    readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
+
+    meta$(debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> {
+        return combineLatest([this.error$, this.touched$, this.value$])
+            .pipe(
+                debounceTime(debounceDelay),
+                map(([error, touched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, touched, value }))
+            );
+    }
+
+    constructor(formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
+        const { initialValue, validator } = options;
+
+        this.name = fieldName;
 
         if (initialValue !== void 0) {
-            this.formeerInstance.setValue(fieldName, initialValue);
+            this.setValue$.next(initialValue);
         }
 
-        this._isTouched = !!isTouched;
         this.validator = validator;
 
-        this.onBlurHandler = () => this.setIsTouched(true);
+        formeerInstance.registerField(this);
+
+        this.onBlurHandler = () => this.setTouched$.next(true);
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
     }
 
     handleChange(value: Value): void {
-        this.formeerInstance.setValue(this.fieldName, value);
+        this.setValue$.next(value);
 
         if (typeof this.validator === 'function') {
-            this.validator(value);
+            const newError = this.validator(value);
+            this.setError$.next(newError);
         }
     }
 
     setIsTouched(value: boolean): void {
-        this._isTouched = value;
+        this.setTouched$.next(value);
     }
 
     get blurHandler(): TOnBlurHandler {
@@ -66,18 +94,6 @@ export class FormeerField<Value = any> {
 
     get changeHandler(): TOnChangeHandler<Value>  {
         return this.onChangeHandler;
-    }
-
-    get errors(): Array<TValidationError> {
-        return this._errors;
-    }
-
-    get isTouched(): boolean {
-        return this._isTouched
-    }
-
-    get value(): Value {
-        return this.formeerInstance.getValue<Value>(this.fieldName);
     }
 
 }
@@ -94,24 +110,41 @@ export class Formeer<Values extends Record<string, any> = any> {
         return Formeer.instances[name];
     }
 
+    private subscriptions: Array<Subscription> = [];
     private values: Values;
 
     constructor(initialValues: Values) {
         this.values = initialValues;
     }
 
-    getValue<Value = any>(fieldName: string): Value {
+    destroy(): void {
+        this.subscriptions.forEach((subscription: Subscription) => {
+            if (subscription && !subscription.closed) {
+                subscription.unsubscribe();
+            }
+        });
+
+        this.subscriptions = [];
+    }
+
+    getFieldValue<Value = any>(fieldName: string): Value {
         return get(this.values, fieldName);
     }
 
-    setValue<Value = any>(fieldName: string, value: Value): void {
-        return void set(this.values, fieldName, value);
+    getValues(): Values {
+        return this.values;
     }
 
-    useField<Value = any>(fieldName: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
-        const [fieldInstance] = useState(FormeerField.getInstance<Value>(this, fieldName, options));
+    registerField<Value = any>(fieldInstance: FormeerField<Value>): void {
+        const subscriptions = [
+            fieldInstance.value$.subscribe((value: Value | undefined) => this.setFieldValue(fieldInstance.name, value))
+        ];
 
-        return fieldInstance;
+        this.subscriptions = this.subscriptions.concat(subscriptions);
+    }
+
+    setFieldValue<Value = any>(fieldName: string, value: Value): void {
+        return void set(this.values, fieldName, value);
     }
 
 }
@@ -120,6 +153,12 @@ export function useFormeer<Values = any>(name: string, initialValues: Values): F
     const [instance] = useState(Formeer.getInstance(name, initialValues));
 
     return instance;
+}
+
+export function useFormeerField<Value = any>(formeerInstance: Formeer, fieldName: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
+    const [fieldInstance] = useState(FormeerField.getInstance<Value>(formeerInstance, fieldName, options));
+
+    return fieldInstance;
 }
 
 export const FormeerContext = createContext<Formeer | null>(null);
@@ -153,7 +192,7 @@ export function FormeerFieldHost<Value = any>(props: TFormeerFieldHostProps<Valu
     const { children, fieldName, initialValue, validator } = props;
 
     const renderFormeerFieldHost = useCallback((value: Formeer | null) => (
-        <FormeerFieldContext.Provider value={value !== null ? value.useField(fieldName, { initialValue, validator }) : null}> // TODO: prevent options object from recreation when not needed
+        <FormeerFieldContext.Provider value={value !== null ? useFormeerField(value, fieldName, { initialValue, validator }) : null}> // TODO: prevent options object from recreation when not needed
             {children}
         </FormeerFieldContext.Provider>
     ), [children, fieldName]);
