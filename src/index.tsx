@@ -37,7 +37,7 @@ export class FormeerField<Value = any> {
     private onChangeHandler!: TOnChangeHandler<Value>;
 
     private setError$: BehaviorSubject<TValidationError> = new BehaviorSubject<TValidationError>(void 0);
-    private setTouched$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+    private setIsTouched$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private setValue$: BehaviorSubject<Value | undefined> = new BehaviorSubject<Value | undefined>(void 0);
 
     private validator?: TValidator
@@ -45,7 +45,7 @@ export class FormeerField<Value = any> {
     readonly name: string;
 
     readonly error$: Observable<TValidationError> = this.setError$.asObservable();
-    readonly touched$: Observable<boolean> = this.setTouched$.asObservable();
+    readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
     constructor(formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
@@ -61,9 +61,9 @@ export class FormeerField<Value = any> {
 
         formeerInstance.registerField(this);
 
-        this.onBlurHandler = () => this.setTouched$.next(true);
+        this.onBlurHandler = () => this.setIsTouched$.next(true);
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
-    }
+    };
 
     handleChange = (value: Value): void => {
         this.setValue$.next(value);
@@ -72,19 +72,19 @@ export class FormeerField<Value = any> {
             const newError = this.validator(value);
             this.setError$.next(newError);
         }
-    }
+    };
 
     meta$ = (debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> => {
-        return combineLatest([this.error$, this.touched$, this.value$])
+        return combineLatest([this.error$, this.isTouched$, this.value$])
             .pipe(
                 debounceTime(debounceDelay),
                 map(([error, touched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, touched, value }))
             );
-    }
+    };
 
-    setIsTouched =(value: boolean): void => {
-        this.setTouched$.next(value);
-    }
+    setIsTouched = (value: boolean): void => {
+        this.setIsTouched$.next(value);
+    };
 
     get blurHandler(): TOnBlurHandler {
         return this.onBlurHandler;
@@ -108,6 +108,7 @@ export class Formeer<Values extends Record<string, any> = any> {
         return Formeer.instances[name];
     }
 
+    private fieldNames: Array<string> = [];
     private subscriptions: Array<Subscription> = [];
     private values: Values = {} as Values;
 
@@ -125,13 +126,22 @@ export class Formeer<Values extends Record<string, any> = any> {
         });
 
         this.subscriptions = [];
-    }
+    };
 
     getFieldValue = get.bind(null, this.values);
 
     getValues = (): Values => {
         return this.values;
-    }
+    };
+
+    errors$ = (filter: Array<string> = []): Observable<Array<string>> => {
+        const filteredNames = filter.length ? this.fieldNames.filter((name: string) => filter.includes(name)) : this.fieldNames;
+        const errorStreams = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$);
+
+        return combineLatest(errorStreams).pipe(
+            map((errors: Array<TValidationError>) => errors.filter((error: TValidationError): error is string => !!error))
+        );
+    };
 
     registerField<Value = any>(fieldInstance: FormeerField<Value>): void {
         const subscriptions = [
@@ -139,6 +149,8 @@ export class Formeer<Values extends Record<string, any> = any> {
         ];
 
         this.subscriptions = this.subscriptions.concat(subscriptions);
+
+        this.fieldNames.push(fieldInstance.name);
     }
 
     setFieldValue = set.bind(null, this.values);
