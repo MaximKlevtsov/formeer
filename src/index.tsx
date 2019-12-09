@@ -43,12 +43,14 @@ export class FormeerField<Value = any> {
 
     readonly name: string;
 
-    readonly error$: Observable<TValidationError> = this.setError$.asObservable();
+    readonly error$: Observable<TValidationError> = this.setError$.asObservable().pipe(
+        debounceTime(150) // more debounce for Formeer::errors$()
+    );
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
     private runValidation(value: Value | undefined = this.setValue$.value): void {
-        if (typeof this.validator === 'function') {
+        if (this.validator) {
             const newError = this.validator(value);
             this.setError$.next(newError);
         }
