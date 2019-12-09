@@ -184,18 +184,18 @@ export function FormeerHost<Values = any>(props: TFormeerHostProps<Values>): JSX
 export type TFormeerFieldHostProps<Value> = {
     children?: ReactNode;
     initialValue?: Value;
-    fieldName: string;
+    name: string;
     validator?: TValidator<Value>;
 };
 
 export function FormeerFieldHost<Value = any>(props: TFormeerFieldHostProps<Value>): JSX.Element {
-    const { children, fieldName, initialValue, validator } = props;
+    const { children, name, initialValue, validator } = props;
 
     const renderFormeerFieldHost = useCallback((value: Formeer | null) => (
-        <FormeerFieldContext.Provider value={value !== null ? useFormeerField(value, fieldName, { initialValue, validator }) : null}> // TODO: prevent options object from recreation when not needed
+        <FormeerFieldContext.Provider value={value !== null ? useFormeerField(value, name, { initialValue, validator }) : null}> // TODO: prevent options object from recreation when not needed
             {children}
         </FormeerFieldContext.Provider>
-    ), [children, fieldName]);
+    ), [children, name]);
 
     return (
         <FormeerContext.Consumer>
