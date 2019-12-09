@@ -17,7 +17,7 @@
     },
     "peerDependencies": {
         "react": ">=16",
-        "rxjs": "^6.5.0"
+        "rxjs": "^6.0.0"
     },
     "prettier": {
         "printWidth": 80,
