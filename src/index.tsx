@@ -42,7 +42,7 @@ export class FormeerField<Value = any> {
     private setTouched$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private setValue$: BehaviorSubject<Value | undefined> = new BehaviorSubject<Value | undefined>(void 0);
 
-    private validator?: TValidator;
+    private validator?: TValidator
 
     readonly name: string;
 
@@ -102,7 +102,7 @@ export class Formeer<Values extends Record<string, any> = any> {
 
     private static instances: Record<string, Formeer> = {};
 
-    static getInstance<Values>(name: string, initialValues: Values): Formeer<Values> {
+    static getInstance<Values>(name: string, initialValues?: Values): Formeer<Values> {
         if (!Formeer.instances[name]) {
             Formeer.instances[name] = new Formeer<Values>(initialValues);
         }
@@ -111,10 +111,12 @@ export class Formeer<Values extends Record<string, any> = any> {
     }
 
     private subscriptions: Array<Subscription> = [];
-    private values: Values;
+    private values: Values = {} as Values;
 
-    constructor(initialValues: Values) {
-        this.values = initialValues;
+    constructor(initialValues?: Values) {
+        if (initialValues !== void 0) {
+            this.values = initialValues;
+        }
     }
 
     destroy = (): void => {
