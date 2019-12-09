@@ -47,6 +47,13 @@ export class FormeerField<Value = any> {
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
+    private runValidation(value: Value | undefined = this.setValue$.value): void {
+        if (typeof this.validator === 'function') {
+            const newError = this.validator(value);
+            this.setError$.next(newError);
+        }
+    }
+
     constructor(formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
         const { initialValue, validator } = options;
 
@@ -60,17 +67,17 @@ export class FormeerField<Value = any> {
 
         formeerInstance.registerField(this);
 
-        this.onBlurHandler = () => this.setIsTouched$.next(true);
+        this.onBlurHandler = () => {
+            this.setIsTouched$.next(true);
+            this.runValidation();
+        };
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
     };
 
     handleChange = (value: Value): void => {
         this.setValue$.next(value);
 
-        if (typeof this.validator === 'function') {
-            const newError = this.validator(value);
-            this.setError$.next(newError);
-        }
+        this.runValidation(value);
     };
 
     meta$ = (debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> => {
