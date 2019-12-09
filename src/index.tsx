@@ -50,14 +50,6 @@ export class FormeerField<Value = any> {
     readonly touched$: Observable<boolean> = this.setTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
-    meta$(debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> {
-        return combineLatest([this.error$, this.touched$, this.value$])
-            .pipe(
-                debounceTime(debounceDelay),
-                map(([error, touched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, touched, value }))
-            );
-    }
-
     constructor(formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
         const { initialValue, validator } = options;
 
@@ -75,7 +67,7 @@ export class FormeerField<Value = any> {
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
     }
 
-    handleChange(value: Value): void {
+    handleChange = (value: Value): void => {
         this.setValue$.next(value);
 
         if (typeof this.validator === 'function') {
@@ -84,7 +76,15 @@ export class FormeerField<Value = any> {
         }
     }
 
-    setIsTouched(value: boolean): void {
+    meta$ = (debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> => {
+        return combineLatest([this.error$, this.touched$, this.value$])
+            .pipe(
+                debounceTime(debounceDelay),
+                map(([error, touched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, touched, value }))
+            );
+    }
+
+    setIsTouched =(value: boolean): void => {
         this.setTouched$.next(value);
     }
 
@@ -117,7 +117,7 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.values = initialValues;
     }
 
-    destroy(): void {
+    destroy = (): void => {
         this.subscriptions.forEach((subscription: Subscription) => {
             if (subscription && !subscription.closed) {
                 subscription.unsubscribe();
@@ -127,11 +127,9 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.subscriptions = [];
     }
 
-    getFieldValue<Value = any>(fieldName: string): Value {
-        return get(this.values, fieldName);
-    }
+    getFieldValue = get.bind(null, this.values);
 
-    getValues(): Values {
+    getValues = (): Values => {
         return this.values;
     }
 
@@ -143,9 +141,7 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.subscriptions = this.subscriptions.concat(subscriptions);
     }
 
-    setFieldValue<Value = any>(fieldName: string, value: Value): void {
-        return void set(this.values, fieldName, value);
-    }
+    setFieldValue = set.bind(null, this.values);
 
 }
 
