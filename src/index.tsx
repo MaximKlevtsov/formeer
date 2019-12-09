@@ -147,7 +147,7 @@ export class Formeer<Values extends Record<string, any> = any> {
 
 }
 
-export function useFormeer<Values = any>(name: string, initialValues: Values): Formeer {
+export function useFormeer<Values = any>(name: string, initialValues?: Values): Formeer {
     const [instance] = useState(Formeer.getInstance(name, initialValues));
 
     return instance;
