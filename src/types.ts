@@ -15,3 +15,8 @@ export type TFormeerFieldOptions<Value> = {
     initialValue?: Value;
     validator?: TValidator;
 };
+
+export type TFormeerOptions<Values> = {
+    initialValues?: Values;
+    onSubmit?: (values: Values) => Promise<void> | void;
+};

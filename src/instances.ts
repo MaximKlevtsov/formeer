@@ -3,7 +3,7 @@ import set from 'lodash/set';
 import { SyntheticEvent } from 'react';
 import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
-import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator } from './types';
+import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator, TFormeerOptions } from './types';
 
 export class FormeerField<Value = any> {
 
@@ -101,14 +101,23 @@ export class Formeer<Values extends Record<string, any> = any> {
         return Formeer.instances[name];
     }
 
+    private setIsSubmitting$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
     private fieldNames: Array<string> = [];
+    private submitHandler?: TFormeerOptions<Values>['onSubmit'];
     private subscriptions: Array<Subscription> = [];
     private values: Values = {} as Values;
 
-    constructor(private name: string, initialValues?: Values) {
+    readonly isSubmitting$: Observable<boolean> = this.setIsSubmitting$.asObservable();
+
+    constructor(private name: string, options: TFormeerOptions<Values> = {}) {
+        const { initialValues, onSubmit } = options;
+
         if (initialValues !== void 0) {
             this.values = initialValues;
         }
+
+        this.submitHandler = onSubmit;
     }
 
     destroy = (): void => {
@@ -137,17 +146,33 @@ export class Formeer<Values extends Record<string, any> = any> {
     };
 
     registerField<Value = any>(fieldInstance: FormeerField<Value>): void {
-        const subscriptions = [
-            fieldInstance.value$.subscribe((value: Value | undefined) => this.setFieldValue(fieldInstance.name, value))
-        ];
+        const subscription = fieldInstance.value$.subscribe(
+            (value: Value | undefined) => this.setFieldValue(fieldInstance.name, value)
+        );
 
-        this.subscriptions = this.subscriptions.concat(subscriptions);
-
+        this.subscriptions.push(subscription);
         this.fieldNames.push(fieldInstance.name);
     }
 
     setFieldValue = set.bind(null, this.values);
 
-    submitForm = () => {};
+    submitForm = (): Promise<void> | void => {
+        if (!this.submitHandler) {
+            console.warn('Formeer instance wasn\'t provided with a \'onSubmit\' callback');
+            return;
+        }
+
+        this.setIsSubmitting$.next(true);
+
+        let probablyAwaitable = this.submitForm();
+
+        if (probablyAwaitable instanceof Promise) {
+            probablyAwaitable.then(() => this.setIsSubmitting$.next(false));
+        } else {
+            this.setIsSubmitting$.next(false);
+        }
+
+        return probablyAwaitable;
+    };
 
 }
