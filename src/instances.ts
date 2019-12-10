@@ -130,7 +130,9 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.subscriptions = [];
     };
 
-    getFieldValue = get.bind(null, this.values);
+    getFieldValue<Value>(name: string): Value {
+        return get(this.values, name);
+    }
 
     getValues = (): Values => {
         return this.values;
@@ -154,7 +156,9 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.fieldNames.push(fieldInstance.name);
     }
 
-    setFieldValue = set.bind(null, this.values);
+    setFieldValue<Value>(name: string, value: Value) {
+        this.values = set(this.values, name, value);
+    }
 
     submitForm = (): Promise<void> | void => {
         if (!this.submitHandler) {
