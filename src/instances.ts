@@ -1,24 +1,9 @@
 import get from 'lodash/get';
 import set from 'lodash/set';
-import { SyntheticEvent, useState } from 'react';
+import { SyntheticEvent } from 'react';
 import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
-
-export type TValidationError = string | undefined;
-export type TValidator<Value = any> = (value: Value) => TValidationError;
-export type TOnBlurHandler = () => void;
-export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) => void;
-
-export type TFormeerFieldMeta<Value> = {
-    error: TValidationError;
-    touched: boolean;
-    value: Value | undefined;
-};
-
-export type TFormeerFieldOptions<Value> = {
-    initialValue?: Value;
-    validator?: TValidator;
-};
+import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator } from './types';
 
 export class FormeerField<Value = any> {
 
@@ -163,16 +148,6 @@ export class Formeer<Values extends Record<string, any> = any> {
 
     setFieldValue = set.bind(null, this.values);
 
-}
+    submitForm = () => {};
 
-export function useFormeer<Values = any>(name: string, initialValues?: Values): Formeer {
-    const [instance] = useState(Formeer.getInstance(name, initialValues));
-
-    return instance;
-}
-
-export function useFormeerField<Value = any>(formeerInstance: Formeer, fieldName: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
-    const [fieldInstance] = useState(FormeerField.getInstance<Value>(formeerInstance, fieldName, options));
-
-    return fieldInstance;
 }
