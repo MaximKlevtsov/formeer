@@ -164,7 +164,7 @@ export class Formeer<Values extends Record<string, any> = any> {
 
         this.setIsSubmitting$.next(true);
 
-        let probablyAwaitable = this.submitForm();
+        let probablyAwaitable = this.submitHandler(this.values);
 
         if (probablyAwaitable instanceof Promise) {
             probablyAwaitable.then(() => this.setIsSubmitting$.next(false));
