@@ -1,8 +1,7 @@
-import get from 'lodash/get';
 import set from 'lodash/set';
 import { SyntheticEvent } from 'react';
 import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
-import { debounceTime, map } from 'rxjs/operators';
+import { debounceTime, first, map } from 'rxjs/operators';
 import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator, TFormeerOptions } from './types';
 
 export class FormeerField<Value = any> {
@@ -102,19 +101,20 @@ export class Formeer<Values extends Record<string, any> = any> {
     }
 
     private setIsSubmitting$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+    private setValues$: BehaviorSubject<Values> = new BehaviorSubject<Values>({} as Values);
 
     private fieldNames: Array<string> = [];
     private submitHandler?: TFormeerOptions<Values>['onSubmit'];
     private subscriptions: Array<Subscription> = [];
-    private values: Values = {} as Values;
 
     readonly isSubmitting$: Observable<boolean> = this.setIsSubmitting$.asObservable();
+    readonly values$: Observable<Values> = this.setValues$.asObservable();
 
     constructor(private name: string, options: TFormeerOptions<Values> = {}) {
         const { initialValues, onSubmit } = options;
 
         if (initialValues !== void 0) {
-            this.values = initialValues;
+            this.setValues$.next(initialValues);
         }
 
         this.submitHandler = onSubmit;
@@ -128,14 +128,6 @@ export class Formeer<Values extends Record<string, any> = any> {
         });
 
         this.subscriptions = [];
-    };
-
-    getFieldValue<Value>(name: string): Value {
-        return get(this.values, name);
-    }
-
-    getValues = (): Values => {
-        return this.values;
     };
 
     errors$ = (filter: Array<string> = []): Observable<Array<string>> => {
@@ -156,11 +148,11 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.fieldNames.push(fieldInstance.name);
     }
 
-    setFieldValue<Value>(name: string, value: Value) {
-        this.values = set(this.values, name, value);
+    private setFieldValue<Value>(name: string, value: Value) {
+        this.setValues$.next(set(this.setValues$.value, name, value));
     }
 
-    submitForm = (): Promise<void> | void => {
+    submitForm = async (): Promise<void> => {
         if (!this.submitHandler) {
             console.warn('Formeer instance wasn\'t provided with a \'onSubmit\' callback');
             return;
@@ -168,7 +160,9 @@ export class Formeer<Values extends Record<string, any> = any> {
 
         this.setIsSubmitting$.next(true);
 
-        let probablyAwaitable = this.submitHandler(this.values);
+        const values = await this.values$.pipe(first()).toPromise();
+
+        let probablyAwaitable = this.submitHandler(values);
 
         if (probablyAwaitable instanceof Promise) {
             probablyAwaitable.then(() => this.setIsSubmitting$.next(false));
