@@ -156,6 +156,10 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.setValues$.next(set(this.setValues$.value, name, value));
     }
 
+    setSubmitFormHandler = (submitHandler: TFormeerOptions<Values>['onSubmit']) => {
+        this.submitHandler = submitHandler;
+    };
+
     submitForm = async (): Promise<void> => {
         if (!this.submitHandler) {
             console.warn('Formeer instance wasn\'t provided with a \'onSubmit\' callback');
