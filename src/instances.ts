@@ -28,7 +28,7 @@ export class FormeerField<Value = any> {
 
     readonly name: string;
 
-    readonly isDisabled$: Observable<boolean> = this.setIsTouched$.asObservable();
+    readonly isDisabled$: Observable<boolean> = this.setIsDisabled$.asObservable();
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
