@@ -80,7 +80,7 @@ export class FormeerField<Value = any> {
         return combineLatest([this.error$, this.isTouched$, this.value$])
             .pipe(
                 debounceTime(debounceDelay),
-                map(([error, touched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, touched, value }))
+                map(([error, isTouched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, isTouched, value }))
             );
     };
 
