@@ -27,9 +27,6 @@ export class FormeerField<Value = any> {
 
     readonly name: string;
 
-    readonly error$: Observable<TValidationError> = this.setError$.asObservable().pipe(
-        debounceTime(150) // more debounce for Formeer::errors$()
-    );
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
@@ -59,6 +56,19 @@ export class FormeerField<Value = any> {
         };
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
     };
+
+    error$(pure: boolean = true): Observable<TValidationError> {
+        const error$ = this.setError$.asObservable();
+
+        if (pure) {
+            return error$.pipe(debounceTime(150));
+        }
+
+        return combineLatest([error$, this.isTouched$]).pipe(
+            debounceTime(150),
+            map(([error, isTouched]: [TValidationError, boolean]) => isTouched ? error : undefined)
+        );
+    }
 
     handleChange = (value: Value): void => {
         this.setValue$.next(value);
@@ -131,11 +141,11 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.subscriptions = [];
     };
 
-    errors$ = (filter: Array<string> = []): Observable<Array<string>> => {
+    errors$ = (hideUntouched = false, filter: Array<string> = []): Observable<Array<string>> => {
         return this.fieldNames$.pipe(
           switchMap((fieldNames: Array<string>) => {
             const filteredNames = filter.length ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames;
-            const errorStreams$ = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$);
+            const errorStreams$ = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$(!hideUntouched));
 
             return combineLatest(errorStreams$);
           }),
