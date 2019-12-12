@@ -55,6 +55,8 @@ export class FormeerField<Value = any> {
             this.runValidation();
         };
         this.onChangeHandler = ({ currentTarget }: SyntheticEvent<{ value: Value }>) => this.handleChange(currentTarget.value);
+
+        this.runValidation();
     };
 
     error$(pure: boolean = true): Observable<TValidationError> {
