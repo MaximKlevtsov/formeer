@@ -143,13 +143,10 @@ export class Formeer<Values extends Record<string, any> = any> {
 
     errors$ = (hideUntouched = false, filter?: Array<string>): Observable<Array<string>> => {
         return this.fieldNames$.pipe(
-          switchMap((fieldNames: Array<string>) => {
-            const filteredNames = filter ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames;
-            const errorStreams$ = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$(!hideUntouched));
-
-            return combineLatest(errorStreams$);
-          }),
-          map((errors: Array<TValidationError>) => errors.filter((error: TValidationError): error is string => !!error))
+            map((fieldNames: Array<string>) => filter ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames),
+            map((fieldNames: Array<string>) => fieldNames.map((name: string) => FormeerField.getInstance(this, name).error$(!hideUntouched))),
+            switchMap((errorStreams: Array<Observable<TValidationError>>) => combineLatest(errorStreams)),
+            map((errors: Array<TValidationError>) => errors.filter((error: TValidationError): error is string => !!error))
         );
     };
 
