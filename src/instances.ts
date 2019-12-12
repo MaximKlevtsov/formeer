@@ -1,7 +1,7 @@
 import set from 'lodash/set';
 import { SyntheticEvent } from 'react';
-import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
-import { debounceTime, first, map } from 'rxjs/operators';
+import { combineLatest, BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { debounceTime, first, map, switchMap } from 'rxjs/operators';
 import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator, TFormeerOptions } from './types';
 
 export class FormeerField<Value = any> {
@@ -100,13 +100,14 @@ export class Formeer<Values extends Record<string, any> = any> {
         return Formeer.instances[name];
     }
 
+    private setFieldNames$: BehaviorSubject<Array<string>> = new BehaviorSubject([] as Array<string>);
     private setIsSubmitting$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private setValues$: BehaviorSubject<Values> = new BehaviorSubject<Values>({} as Values);
 
-    private fieldNames: Array<string> = [];
     private submitHandler?: TFormeerOptions<Values>['onSubmit'];
     private subscriptions: Array<Subscription> = [];
 
+    readonly fieldNames$: Observable<Array<string>> = this.setFieldNames$.asObservable();
     readonly isSubmitting$: Observable<boolean> = this.setIsSubmitting$.asObservable();
     readonly values$: Observable<Values> = this.setValues$.asObservable();
 
@@ -131,11 +132,14 @@ export class Formeer<Values extends Record<string, any> = any> {
     };
 
     errors$ = (filter: Array<string> = []): Observable<Array<string>> => {
-        const filteredNames = filter.length ? this.fieldNames.filter((name: string) => filter.includes(name)) : this.fieldNames;
-        const errorStreams = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$);
+        return this.fieldNames$.pipe(
+          switchMap((fieldNames: Array<string>) => {
+            const filteredNames = filter.length ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames;
+            const errorStreams$ = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$);
 
-        return combineLatest(errorStreams).pipe(
-            map((errors: Array<TValidationError>) => errors.filter((error: TValidationError): error is string => !!error))
+            return combineLatest(errorStreams$);
+          }),
+          map((errors: Array<TValidationError>) => errors.filter((error: TValidationError): error is string => !!error))
         );
     };
 
@@ -145,7 +149,7 @@ export class Formeer<Values extends Record<string, any> = any> {
         );
 
         this.subscriptions.push(subscription);
-        this.fieldNames.push(fieldInstance.name);
+        this.setFieldNames$.next(this.setFieldNames$.value.concat(fieldInstance.name));
     }
 
     private setFieldValue<Value>(name: string, value: Value) {
