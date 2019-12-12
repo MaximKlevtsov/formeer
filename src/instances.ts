@@ -20,6 +20,7 @@ export class FormeerField<Value = any> {
     private onChangeHandler!: TOnChangeHandler<Value>;
 
     private setError$: BehaviorSubject<TValidationError> = new BehaviorSubject<TValidationError>(void 0);
+    private setIsDisabled$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private setIsTouched$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private setValue$: BehaviorSubject<Value | undefined> = new BehaviorSubject<Value | undefined>(void 0);
 
@@ -27,10 +28,13 @@ export class FormeerField<Value = any> {
 
     readonly name: string;
 
+    readonly isDisabled$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
 
     private runValidation(value: Value | undefined = this.setValue$.value): void {
+        if (this.setIsDisabled$.value) return;
+
         if (this.validator) {
             const newError = this.validator(value);
             this.setError$.next(newError);
@@ -60,10 +64,13 @@ export class FormeerField<Value = any> {
     };
 
     error$(pure: boolean = true): Observable<TValidationError> {
-        const error$ = this.setError$.asObservable();
+        const error$ = combineLatest([this.setError$.asObservable(), this.isDisabled$]).pipe(
+            debounceTime(150),
+            map(([error, isDisabled]: [TValidationError, boolean]) => !isDisabled ? error : undefined)
+        );
 
         if (pure) {
-            return error$.pipe(debounceTime(150));
+            return error$;
         }
 
         return combineLatest([error$, this.isTouched$]).pipe(
@@ -86,9 +93,21 @@ export class FormeerField<Value = any> {
             );
     };
 
-    setIsTouched = (value: boolean): void => {
-        this.setIsTouched$.next(value);
+    setError = (error: TValidationError): void => {
+        this.setError$.next(error);
     };
+
+    setIsDisabled = (isDisabled: boolean): void => {
+        this.setIsDisabled$.next(isDisabled);
+    };
+
+    setIsTouched = (isTouched: boolean): void => {
+        this.setIsTouched$.next(isTouched);
+    };
+
+    setValue = (value: Value): void => {
+        this.setValue$.next(value);
+    }
 
     get blurHandler(): TOnBlurHandler {
         return this.onBlurHandler;
