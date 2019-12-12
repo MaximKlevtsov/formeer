@@ -141,10 +141,10 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.subscriptions = [];
     };
 
-    errors$ = (hideUntouched = false, filter: Array<string> = []): Observable<Array<string>> => {
+    errors$ = (hideUntouched = false, filter?: Array<string>): Observable<Array<string>> => {
         return this.fieldNames$.pipe(
           switchMap((fieldNames: Array<string>) => {
-            const filteredNames = filter.length ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames;
+            const filteredNames = filter ? fieldNames.filter((name: string) => filter.includes(name)) : fieldNames;
             const errorStreams$ = filteredNames.map((name: string) => FormeerField.getInstance(this, name).error$(!hideUntouched));
 
             return combineLatest(errorStreams$);
