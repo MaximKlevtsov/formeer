@@ -86,10 +86,20 @@ export class FormeerField<Value = any> {
     };
 
     meta$ = (debounceDelay: number = 150): Observable<TFormeerFieldMeta<Value>> => {
-        return combineLatest([this.error$(), this.isTouched$, this.value$])
+        return combineLatest([this.error$(), this.isDisabled$, this.isTouched$, this.value$])
             .pipe(
                 debounceTime(debounceDelay),
-                map(([error, isTouched, value]: [TValidationError, boolean, Value | undefined]): TFormeerFieldMeta<Value> => ({ error, isTouched, value }))
+                map(([
+                    error,
+                    isDisabled,
+                    isTouched,
+                    value
+                ]: [
+                    TValidationError,
+                    boolean,
+                    boolean,
+                    Value | undefined
+                ]): TFormeerFieldMeta<Value> => ({ error, isDisabled, isTouched, value }))
             );
     };
 

@@ -7,6 +7,7 @@ export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) 
 
 export type TFormeerFieldMeta<Value> = {
     error: TValidationError;
+    isDisabled: boolean;
     isTouched: boolean;
     value: Value | undefined;
 };
