@@ -9,11 +9,13 @@ export class FormeerField<Value = any> {
     private static instances: Record<string, FormeerField> = {};
 
     static getInstance<Value>(formeerInstance: Formeer, name: string, options?: TFormeerFieldOptions<Value>): FormeerField<Value> {
-        if (!FormeerField.instances[name]) {
-            FormeerField.instances[name] = new FormeerField<Value>(formeerInstance, name, options);
+        const key = `${formeerInstance.name}-${name}`;
+
+        if (!FormeerField.instances[key]) {
+            FormeerField.instances[key] = new FormeerField<Value>(formeerInstance, name, options);
         }
 
-        return FormeerField.instances[name];
+        return FormeerField.instances[key];
     }
 
     private onBlurHandler!: TOnBlurHandler;
@@ -152,8 +154,12 @@ export class Formeer<Values extends Record<string, any> = any> {
     readonly isSubmitting$: Observable<boolean> = this.setIsSubmitting$.asObservable();
     readonly values$: Observable<Values> = this.setValues$.asObservable();
 
-    constructor(private name: string, options: TFormeerOptions<Values> = {}) {
+    readonly name: string;
+
+    constructor(name: string, options: TFormeerOptions<Values> = {}) {
         const { initialValues, onSubmit } = options;
+
+        this.name = name;
 
         if (initialValues !== void 0) {
             this.setValues$.next(initialValues);
