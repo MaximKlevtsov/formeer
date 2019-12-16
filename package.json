@@ -3,7 +3,7 @@
     "version": "1.6.0",
     "license": "MIT",
     "author": "Mikhail Vedernikov <misha.smert@gmail.com> (https://smertos.xyz/)",
-    "repository": "Smertos/former",
+    "repository": "Smertos/formeer",
     "main": "dist/index.js",
     "module": "dist/formeer.esm.js",
     "typings": "dist/index.d.ts",
