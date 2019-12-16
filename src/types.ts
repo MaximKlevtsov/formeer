@@ -18,6 +18,7 @@ export type TFormeerFieldOptions<Value> = {
 };
 
 export type TFormeerOptions<Values> = {
+    initializeValues?: boolean;
     initialValues?: Values;
     onSubmit?: (values: Values) => Promise<void> | void;
 };
