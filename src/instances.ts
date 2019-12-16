@@ -191,16 +191,16 @@ export class Formeer<Values extends Record<string, any> = any> {
     };
 
     registerField<Value = any>(fieldInstance: FormeerField<Value>): void {
+        if (this.initializeValues) {
+            fieldInstance.setValue(get(this.setValues$.value, fieldInstance.name, void 0));
+        }
+
         const subscription = fieldInstance.value$.subscribe(
             (value: Value | undefined) => this.setFieldValue(fieldInstance.name, value)
         );
 
         this.subscriptions.push(subscription);
         this.setFieldNames$.next(this.setFieldNames$.value.concat(fieldInstance.name));
-
-        if (this.initializeValues) {
-            fieldInstance.setValue(get(this.setValues$.value, fieldInstance.name, void 0));
-        }
     }
 
     private setFieldValue<Value>(name: string, value: Value) {
