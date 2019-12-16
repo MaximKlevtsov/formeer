@@ -118,7 +118,7 @@ export class FormeerField<Value = any> {
         this.setIsTouched$.next(isTouched);
     };
 
-    setValue = (value: Value): void => {
+    setValue = (value: Value | undefined): void => {
         this.setValue$.next(value);
     }
 
@@ -199,7 +199,7 @@ export class Formeer<Values extends Record<string, any> = any> {
         this.setFieldNames$.next(this.setFieldNames$.value.concat(fieldInstance.name));
 
         if (this.initializeValues) {
-            fieldInstance.setValue(get<Value>(this.setValues$.value, fieldInstance.name, void 0));
+            fieldInstance.setValue(get(this.setValues$.value, fieldInstance.name, void 0));
         }
     }
 
