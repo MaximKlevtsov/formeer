@@ -2,7 +2,7 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import { SyntheticEvent } from 'react';
 import { combineLatest, BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { debounceTime, first, map, switchMap } from 'rxjs/operators';
+import { debounceTime, first, map, switchMap, take } from 'rxjs/operators';
 import { TFormeerFieldMeta, TFormeerFieldOptions, TOnBlurHandler, TOnChangeHandler, TValidationError, TValidator, TFormeerOptions } from './types';
 
 export class FormeerField<Value = any> {
@@ -34,15 +34,6 @@ export class FormeerField<Value = any> {
     readonly isDisabled$: Observable<boolean> = this.setIsDisabled$.asObservable();
     readonly isTouched$: Observable<boolean> = this.setIsTouched$.asObservable();
     readonly value$: Observable<Value | undefined> = this.setValue$.asObservable();
-
-    private runValidation(value: Value | undefined = this.setValue$.value): void {
-        if (this.setIsDisabled$.value) return;
-
-        if (this.validator) {
-            const newError = this.validator(value, this.formeerInstance.currentValues);
-            this.setError$.next(newError);
-        }
-    }
 
     constructor(private formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
         const { initialValue, validator } = options;
@@ -105,6 +96,15 @@ export class FormeerField<Value = any> {
                 ]): TFormeerFieldMeta<Value> => ({ error, isDisabled, isTouched, value }))
             );
     };
+
+    runValidation(value: Value | undefined = this.setValue$.value): void {
+        if (this.setIsDisabled$.value) return;
+
+        if (this.validator) {
+            const newError = this.validator(value, this.formeerInstance.currentValues);
+            this.setError$.next(newError);
+        }
+    }
 
     setError = (error: TValidationError): void => {
         this.setError$.next(error);
@@ -231,6 +231,11 @@ export class Formeer<Values extends Record<string, any> = any> {
 
         return probablyAwaitable;
     };
+
+    async triggerValidation(): Promise<void> {
+        const fieldNames = await this.fieldNames$.pipe(take(1)).toPromise();
+        fieldNames.forEach((name: string) => FormeerField.getInstance(this, name).runValidation());
+    }
 
     get currentValues(): Values {
         return this.setValues$.value;
