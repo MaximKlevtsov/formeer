@@ -1,7 +1,7 @@
 import { SyntheticEvent } from 'react';
 
 export type TValidationError = string | undefined;
-export type TValidator<Value = any> = (value: Value | undefined) => TValidationError;
+export type TValidator<Value = any, Values = any> = (value: Value | undefined, values: Values) => TValidationError;
 export type TOnBlurHandler = () => void;
 export type TOnChangeHandler<Value> = (event: SyntheticEvent<{ value: Value }>) => void;
 

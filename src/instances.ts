@@ -39,12 +39,12 @@ export class FormeerField<Value = any> {
         if (this.setIsDisabled$.value) return;
 
         if (this.validator) {
-            const newError = this.validator(value);
+            const newError = this.validator(value, this.formeerInstance.currentValues);
             this.setError$.next(newError);
         }
     }
 
-    constructor(formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
+    constructor(private formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
         const { initialValue, validator } = options;
 
         this.name = fieldName;
@@ -55,7 +55,7 @@ export class FormeerField<Value = any> {
 
         this.validator = validator;
 
-        formeerInstance.registerField(this);
+        this.formeerInstance.registerField(this);
 
         this.onBlurHandler = () => {
             this.setIsTouched$.next(true);
@@ -231,5 +231,9 @@ export class Formeer<Values extends Record<string, any> = any> {
 
         return probablyAwaitable;
     };
+
+    get currentValues(): Values {
+        return this.setValues$.value;
+    }
 
 }
