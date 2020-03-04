@@ -13,7 +13,7 @@ export class FormeerField<Value = any> {
         const key = `${formeerInstance.name}-${name}`;
 
         if (!FormeerField.instances[key]) {
-            FormeerField.instances[key] = new FormeerField<Value>(formeerInstance, name, options);
+            new FormeerField<Value>(formeerInstance, name, options);
         }
 
         return FormeerField.instances[key];
@@ -37,6 +37,9 @@ export class FormeerField<Value = any> {
 
     constructor(private formeerInstance: Formeer, fieldName: string, options: TFormeerFieldOptions<Value> = {}) {
         const { initialValue, validator } = options;
+
+        const key = `${formeerInstance.name}-${fieldName}`;
+        FormeerField.instances[key] = this;
 
         this.name = fieldName;
 
